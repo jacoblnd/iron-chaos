@@ -1,6 +1,8 @@
 use iced::widget::{column, text, button, Column};
 use iced::Theme;
 
+use iron_chaos::rbn::RBN;
+
 #[derive(Debug, Clone, Copy)]
 enum Message {
     Increment,
@@ -41,6 +43,10 @@ impl Counter {
 }
 
 fn main() -> iced::Result {
+    let rbn: RBN = RBN {
+        size: 20,
+    };
+    dbg!(rbn);
     iced::application("A cool counter", Counter::update, Counter::view)
         .theme(theme)
         .run()
