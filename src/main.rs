@@ -1,5 +1,5 @@
-use iced::widget::{column, text, button, Column};
 use iced::Theme;
+use iced::widget::{Column, button, column, text};
 
 use iron_chaos::rbn::RBN;
 
@@ -34,18 +34,16 @@ impl Counter {
         match message {
             Message::Increment => {
                 self.value += 1;
-            },
+            }
             Message::Decrement => {
                 self.value -= 1;
-            },
+            }
         }
     }
 }
 
 fn main() -> iced::Result {
-    let rbn: RBN = RBN {
-        size: 20,
-    };
+    let rbn: RBN = RBN { size: 20 };
     dbg!(rbn);
     iced::application("A cool counter", Counter::update, Counter::view)
         .theme(theme)
