@@ -21,6 +21,7 @@ impl RandProvider for DeterministicRBN {
 fn single_node() {
     let test_rng = DeterministicRBN::new();
 
+    // Create a single-node rbn.
     let mut s_rbn = SynchronousRBN {
         n: 1,
         k: 1,
@@ -28,4 +29,7 @@ fn single_node() {
         nodes: Vec::new(),
         random_provider: test_rng,
     };
+    s_rbn.setup_nodes();
+
+    assert_eq!(s_rbn.nodes[0].state, false);
 }

@@ -9,17 +9,10 @@ struct Node {
     state: bool,
 }
 
-#[derive(Debug)]
-pub struct SynchronousRBN<R: RandProvider = RandRBN> {
-    n: usize,
-    k: usize,
-    p: f64,
-    nodes: Vec<Node>,
-    random_provider: R,
-}
-
-/// Defines the common interface for random generation behavior used by
-/// RBNs.
+/// Defines the common interface for random generation behavior depended upon by RBNs.
+///
+/// Implementing with a test provider is useful for testing.
+/// Implementing with other "non-defualt random" behaviors may be intersting in the future.
 pub trait RandProvider {
     /// Return a random boolean based on probability p.
     fn random_bool(&self, p: f64) -> bool;
@@ -27,6 +20,7 @@ pub trait RandProvider {
     fn random_distinct(&self, k: usize, n: usize) -> Vec<usize>;
 }
 
+/// The default random provider for RBNs.
 pub struct RandRBN {}
 
 impl RandRBN {
@@ -52,10 +46,22 @@ impl RandProvider for RandRBN {
     }
 }
 
+/// Define the common interface functionality for an RBN.
 pub trait RBN {
     fn setup_nodes(&mut self);
     fn rand_activate_nodes(&mut self, activate_probability: f64);
     fn advance(&mut self, t: u32) -> Vec<u8>;
+}
+
+/// Define the SynchronousRBN: An RBN which re-calculates the state of each node for each
+/// time step based on the dependency graph and truth tables constructed during setup_nodes.
+#[derive(Debug)]
+pub struct SynchronousRBN<R: RandProvider = RandRBN> {
+    n: usize,
+    k: usize,
+    p: f64,
+    nodes: Vec<Node>,
+    random_provider: R,
 }
 
 impl SynchronousRBN {
@@ -72,6 +78,8 @@ impl SynchronousRBN {
 }
 
 impl<R: RandProvider> RBN for SynchronousRBN<R> {
+    /// Create the nodes with their dependencies and truth tables. State is initialized to false
+    /// by default
     fn setup_nodes(&mut self) {
         // Create nodes with ids: 0..n.
         for i in 0..self.n {
@@ -84,11 +92,16 @@ impl<R: RandProvider> RBN for SynchronousRBN<R> {
             self.nodes.push(node);
         }
     }
+
+    /// Randomly set some nodes to activate based on activate_probability.
     fn rand_activate_nodes(&mut self, activate_probability: f64) {
         for node in self.nodes.iter_mut() {
             node.state = self.random_provider.random_bool(activate_probability);
         }
     }
+    /// For t time steps: update the state of each node depending on the states of the previous
+    /// time step and the dependency graph and truth tables.
+    /// Return the current state after advancing t time steps.
     fn advance(&mut self, t: u32) -> Vec<u8> {
         // Grab the vec of input_ids for each node.
         let input_id_vec: Vec<Vec<usize>> = self
