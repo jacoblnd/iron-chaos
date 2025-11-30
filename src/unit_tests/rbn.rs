@@ -1,16 +1,31 @@
 use super::*;
 
-// trait RandomTestable {
-//     fn with_random();
-// }
+struct DeterministicRBN {}
 
+impl DeterministicRBN {
+    fn new() -> Self {
+        Self {}
+    }
+}
 
-// #[test]
-// fn has_properties() {
-//     let rbn = RBN {
-//         n_nodes: 20,
-//         conns_per_node: 2,
-//         activation_probability: 0.5,
-//     };
-//     assert!(rbn.n_nodes == 20);
-// }
+impl RandProvider for DeterministicRBN {
+    fn random_bool(&self, p: f64) -> bool {
+        true
+    }
+    fn random_distinct(&self, k: usize, n: usize) -> Vec<usize> {
+        vec![0; n]
+    }
+}
+
+#[test]
+fn single_node() {
+    let test_rng = DeterministicRBN::new();
+
+    let mut s_rbn = SynchronousRBN {
+        n: 1,
+        k: 1,
+        p: 1 as f64,
+        nodes: Vec::new(),
+        random_provider: test_rng,
+    };
+}

@@ -22,9 +22,9 @@ pub struct SynchronousRBN<R: RandProvider = RandRBN> {
 /// RBNs.
 pub trait RandProvider {
     /// Return a random boolean based on probability p.
-    fn random_bool(p: f64) -> bool;
+    fn random_bool(&self, p: f64) -> bool;
     /// Return K distinct random values in range 0..n.
-    fn random_distinct(k: usize, n: usize) -> Vec<usize>;
+    fn random_distinct(&self, k: usize, n: usize) -> Vec<usize>;
 }
 
 pub struct RandRBN {}
@@ -37,7 +37,7 @@ impl RandRBN {
 
 impl RandProvider for RandRBN {
     /// Returns a boolean with probability p that it will be true.
-    fn random_bool(p: f64) -> bool {
+    fn random_bool(&self, p: f64) -> bool {
         let mut rng = rand::rng();
         match rng.random::<f64>() < p {
             true => true,
@@ -46,7 +46,7 @@ impl RandProvider for RandRBN {
     }
     /// Returns an array of K distinct usize between 0..n.
     /// Will panic if K > n.
-    fn random_distinct(k: usize, n: usize) -> Vec<usize> {
+    fn random_distinct(&self, k: usize, n: usize) -> Vec<usize> {
         let mut rng = rand::rng();
         rand::seq::index::sample(&mut rng, n, k).into_vec()
     }
@@ -77,8 +77,8 @@ impl<R: RandProvider> RBN for SynchronousRBN<R> {
         for i in 0..self.n {
             let node = Node {
                 id: i as usize,
-                input_ids: R::random_distinct(self.k, self.n),
-                truth_table: generate_truth_table::<R>(self.k, self.p),
+                input_ids: self.random_provider.random_distinct(self.k, self.n),
+                truth_table: generate_truth_table(self.k, self.p, &self.random_provider),
                 state: false,
             };
             self.nodes.push(node);
@@ -86,7 +86,7 @@ impl<R: RandProvider> RBN for SynchronousRBN<R> {
     }
     fn rand_activate_nodes(&mut self, activate_probability: f64) {
         for node in self.nodes.iter_mut() {
-            node.state = R::random_bool(activate_probability);
+            node.state = self.random_provider.random_bool(activate_probability);
         }
     }
     fn advance(&mut self, t: u32) -> Vec<u8> {
@@ -122,7 +122,11 @@ impl<R: RandProvider> RBN for SynchronousRBN<R> {
 
 /// Generate a random truth table of n inputs with probability p a given input combination
 /// will return true.
-fn generate_truth_table<R: RandProvider>(n: usize, p: f64) -> HashMap<Vec<u8>, bool> {
+fn generate_truth_table<R: RandProvider>(
+    n: usize,
+    p: f64,
+    random_provider: &R,
+) -> HashMap<Vec<u8>, bool> {
     let num_rows = 2_usize.pow(n as u32);
 
     let mut truth_table = HashMap::with_capacity(num_rows);
@@ -133,7 +137,7 @@ fn generate_truth_table<R: RandProvider>(n: usize, p: f64) -> HashMap<Vec<u8>, b
             input_vector.push(((i >> j) & 1) as u8);
         }
 
-        truth_table.insert(input_vector, R::random_bool(p));
+        truth_table.insert(input_vector, random_provider.random_bool(p));
     }
     truth_table
 }
