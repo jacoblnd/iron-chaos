@@ -10,7 +10,7 @@ struct Node {
 }
 
 #[derive(Debug)]
-pub struct SequentialRBN {
+pub struct SynchronousRBN {
     nodes: Vec<Node>,
 }
 
@@ -19,7 +19,7 @@ pub trait RBN {
     fn rand_activate(&mut self, p: f64);
 }
 
-impl RBN for SequentialRBN {
+impl RBN for SynchronousRBN {
     fn advance(&mut self, t: u32) -> Vec<u8> {
         // Grab the vec of input_ids for each node.
         let input_id_vec: Vec<Vec<usize>> = self
@@ -59,20 +59,20 @@ impl RBN for SequentialRBN {
     }
 }
 
-impl SequentialRBN {
+impl SynchronousRBN {
     pub fn new(n: u32, k: u32, p: f64) -> Self {
         let mut nodes: Vec<Node> = Vec::with_capacity(n as usize);
         // Create nodes with ids: 0..n.
         for i in 0..n {
             let node = Node {
                 id: i as usize,
-                input_ids: SequentialRBN::generate_input_ids(k, n),
+                input_ids: SynchronousRBN::generate_input_ids(k, n),
                 truth_table: generate_truth_table(k as usize, p),
                 state: false,
             };
             nodes.push(node);
         }
-        SequentialRBN { nodes }
+        SynchronousRBN { nodes }
     }
 
     fn generate_input_ids(k: u32, n: u32) -> Vec<usize> {
