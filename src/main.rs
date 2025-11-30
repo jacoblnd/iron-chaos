@@ -43,9 +43,15 @@ impl Counter {
 }
 
 fn main() -> iced::Result {
-    let mut s_rbn = rbn::SequentialRBN::new(5, 2, 0.5);
+    let mut s_rbn = rbn::SequentialRBN::new(2, 2, 0.5);
     s_rbn.rand_activate(0.5);
-    dbg!(s_rbn);
+    println!("{:?}", s_rbn.advance(1));
+    println!("{:?}", s_rbn.advance(1));
+    println!("{:?}", s_rbn.advance(1));
+    println!("{:?}", s_rbn.advance(1));
+    println!("{:?}", s_rbn.advance(1));
+    println!("{:?}", s_rbn.advance(1));
+    println!("{:?}", s_rbn.advance(1));
     // iced::application("A cool counter", Counter::update, Counter::view)
     //     .theme(theme)
     //     .run()

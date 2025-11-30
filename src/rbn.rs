@@ -5,7 +5,7 @@ use std::collections::HashMap;
 struct Node {
     id: usize,
     input_ids: Vec<usize>,
-    truth_table: HashMap<Vec<u8>, u8>,
+    truth_table: HashMap<Vec<u8>, bool>,
     state: bool,
 }
 
@@ -15,13 +15,39 @@ pub struct SequentialRBN {
 }
 
 pub trait RBN {
-    fn advance(t: u32) -> Vec<u8>;
+    fn advance(&mut self, t: u32) -> Vec<u8>;
     fn rand_activate(&mut self, p: f64);
 }
 
 impl RBN for SequentialRBN {
-    fn advance(t: u32) -> Vec<u8> {
-        todo!()
+    fn advance(&mut self, t: u32) -> Vec<u8> {
+        // Grab the vec of input_ids for each node.
+        let input_id_vec: Vec<Vec<usize>> = self
+            .nodes
+            .iter()
+            .map(|node| node.input_ids.clone())
+            .collect();
+        // Grab the state from the node in each input.
+        let input_states: Vec<Vec<u8>> = input_id_vec
+            .iter()
+            .map(|input_ids| {
+                input_ids
+                    .iter()
+                    .map(|input_id| self.nodes[*input_id].state as u8)
+                    .collect::<Vec<u8>>()
+            })
+            .collect();
+        // Set the state of each node based on the input.
+        let mut output_vec: Vec<u8> = Vec::with_capacity(self.nodes.len());
+        for (index, node) in self.nodes.iter_mut().enumerate() {
+            let output = *node.truth_table.get(&input_states[index]).unwrap();
+            node.state = output;
+            match output {
+                true => output_vec.push(u8::from(1)),
+                false => output_vec.push(u8::from(0)),
+            }
+        }
+        output_vec
     }
     fn rand_activate(&mut self, p: f64) {
         let mut rng = rand::rng();
@@ -57,11 +83,9 @@ impl SequentialRBN {
     }
 }
 
-/*
-Generate a random truth table of n inputs with probability p a given input combination
-will return true.
-*/
-fn generate_truth_table(n: usize, p: f64) -> HashMap<Vec<u8>, u8> {
+/// Generate a random truth table of n inputs with probability p a given input combination
+/// will return true.
+fn generate_truth_table(n: usize, p: f64) -> HashMap<Vec<u8>, bool> {
     let mut rng = rand::rng();
     let num_rows = 2_usize.pow(n as u32);
 
@@ -73,7 +97,7 @@ fn generate_truth_table(n: usize, p: f64) -> HashMap<Vec<u8>, u8> {
             input_vector.push(((i >> j) & 1) as u8);
         }
 
-        let output = if rng.random::<f64>() < p { 1 } else { 0 };
+        let output = if rng.random::<f64>() < p { true } else { false };
         truth_table.insert(input_vector, output);
     }
 
