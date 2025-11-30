@@ -39,13 +39,10 @@ fn sync_rbn_one_node_setup() {
     test_rand_provider.random_distinct_return = vec![0];
 
     let mut sync_rbn = SynchronousRBN {
-        n: 1,
-        k: 1,
-        p: 1 as f64,
         nodes: Vec::new(),
         random_provider: test_rand_provider,
     };
-    sync_rbn.setup_nodes();
+    sync_rbn.setup_nodes(1, 1, 1 as f64);
 
     let expected_nodes: Vec<Node> = vec![Node {
         id: 0,
@@ -69,13 +66,10 @@ fn sync_rbn_two_node_setup() {
     test_rand_provider.random_distinct_return = vec![0, 1];
 
     let mut sync_rbn = SynchronousRBN {
-        n: 2,
-        k: 2,
-        p: 1 as f64,
         nodes: Vec::new(),
         random_provider: test_rand_provider,
     };
-    sync_rbn.setup_nodes();
+    sync_rbn.setup_nodes(2, 2, 1 as f64);
 
     let expected_nodes: Vec<Node> = vec![
         Node {
@@ -117,13 +111,10 @@ fn sync_rbn_three_node_setup() {
     test_rand_provider.random_distinct_return = vec![1, 2];
 
     let mut sync_rbn = SynchronousRBN {
-        n: 3,
-        k: 2,
-        p: 1 as f64,
         nodes: Vec::new(),
         random_provider: test_rand_provider,
     };
-    sync_rbn.setup_nodes();
+    sync_rbn.setup_nodes(3, 2, 1 as f64);
 
     let expected_nodes: Vec<Node> = vec![
         Node {
@@ -170,9 +161,6 @@ fn sync_rbn_single_node_advance() {
     // Single node which activates itself when it is true in previous time step.
     let test_rand_provider = DeterministicProvider::new();
     let mut sync_rbn = SynchronousRBN {
-        n: 1,
-        k: 1,
-        p: 1 as f64,
         nodes: vec![Node {
             id: 0,
             input_ids: vec![0], // input is itself
@@ -197,9 +185,6 @@ fn sync_rbn_two_node_advance() {
     // Two nodes: each depend on the other and activate if prevoius time step was true.
     let test_rand_provider = DeterministicProvider::new();
     let mut sync_rbn = SynchronousRBN {
-        n: 2,
-        k: 1,
-        p: 1 as f64,
         nodes: vec![
             Node {
                 id: 0,
