@@ -1,7 +1,7 @@
 use iced::Theme;
 use iced::widget::{Column, button, column, text};
 
-use iron_chaos::rbn::RBN;
+use iron_chaos::rbn::{self, RBN};
 
 #[derive(Debug, Clone, Copy)]
 enum Message {
@@ -43,9 +43,11 @@ impl Counter {
 }
 
 fn main() -> iced::Result {
-    let rbn: RBN = RBN { size: 20 };
-    dbg!(rbn);
-    iced::application("A cool counter", Counter::update, Counter::view)
-        .theme(theme)
-        .run()
+    let mut s_rbn = rbn::SequentialRBN::new(5, 2, 0.5);
+    s_rbn.rand_activate(0.5);
+    dbg!(s_rbn);
+    // iced::application("A cool counter", Counter::update, Counter::view)
+    //     .theme(theme)
+    //     .run()
+    todo!()
 }
