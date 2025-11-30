@@ -1,5 +1,10 @@
 use super::*;
 
+// trait RandomTestable {
+//     fn with_random();
+// }
+
+
 // #[test]
 // fn has_properties() {
 //     let rbn = RBN {
