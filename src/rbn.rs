@@ -48,7 +48,6 @@ impl RandProvider for RandRBN {
 
 /// Define the common interface functionality for an RBN.
 pub trait RBN {
-    fn setup_nodes(&mut self);
     fn rand_activate_nodes(&mut self, activate_probability: f64);
     fn advance(&mut self, t: u32) -> Vec<u8>;
 }
@@ -57,9 +56,6 @@ pub trait RBN {
 /// time step based on the dependency graph and truth tables constructed during setup_nodes.
 #[derive(Debug)]
 pub struct SynchronousRBN<R: RandProvider = RandRBN> {
-    n: usize,
-    k: usize,
-    p: f64,
     nodes: Vec<Node>,
     random_provider: R,
 }
@@ -67,32 +63,33 @@ pub struct SynchronousRBN<R: RandProvider = RandRBN> {
 impl SynchronousRBN {
     /// Helper for easily initializing a SynchronousRBN.
     pub fn new(n: usize, k: usize, p: f64) -> Self {
-        Self {
-            n,
-            k,
-            p,
+        let mut sync_rbn = Self {
             nodes: Vec::new(),
             random_provider: RandRBN::new(),
-        }
+        };
+        sync_rbn.setup_nodes(n, k, p);
+        sync_rbn
     }
 }
 
-impl<R: RandProvider> RBN for SynchronousRBN<R> {
+impl<R: RandProvider> SynchronousRBN<R> {
     /// Create the nodes with their dependencies and truth tables. State is initialized to false
     /// by default
-    fn setup_nodes(&mut self) {
+    fn setup_nodes(&mut self, n: usize, k: usize, p: f64) {
         // Create nodes with ids: 0..n.
-        for i in 0..self.n {
+        for i in 0..n {
             let node = Node {
                 id: i as usize,
-                input_ids: self.random_provider.random_distinct(self.k, self.n),
-                truth_table: generate_truth_table(self.k, self.p, &self.random_provider),
+                input_ids: self.random_provider.random_distinct(k, n),
+                truth_table: generate_truth_table(k, p, &self.random_provider),
                 state: false,
             };
             self.nodes.push(node);
         }
     }
+}
 
+impl<R: RandProvider> RBN for SynchronousRBN<R> {
     /// Randomly set some nodes to activate based on activate_probability.
     fn rand_activate_nodes(&mut self, activate_probability: f64) {
         for node in self.nodes.iter_mut() {
