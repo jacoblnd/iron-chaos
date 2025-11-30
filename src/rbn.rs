@@ -1,7 +1,7 @@
 use rand::Rng;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct Node {
     id: usize,
     input_ids: Vec<usize>,
