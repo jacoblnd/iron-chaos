@@ -29,6 +29,12 @@ impl RandRBN {
     }
 }
 
+impl Default for RandRBN {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RandProvider for RandRBN {
     /// Returns a boolean with probability p that it will be true.
     fn random_bool(&self, p: f64) -> bool {
@@ -54,7 +60,7 @@ pub trait RBN {
 
 /// Define the SynchronousRBN: An RBN which re-calculates the state of each node for each
 /// time step based on the dependency graph and truth tables constructed during setup_nodes.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SynchronousRBN<R: RandProvider = RandRBN> {
     nodes: Vec<Node>,
     random_provider: R,
