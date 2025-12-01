@@ -1,29 +1,47 @@
-use iced::widget::{Column, Row, button, column, container, row, scrollable, text, text_input};
-use iced::{Alignment, Border, Color, Element, Length, Theme};
+use iced::widget::{Container, Row, button, column, container, row, scrollable, text, text_input};
+use iced::{Alignment, Border, Color, Element, Length, Size, Theme};
 
 use iron_chaos::rbn::{self, RBN};
 
-const INITIAL_RBN_SIZE: &'static str = "20";
+const INITIAL_RBN_N: &'static str = "20";
+const INITIAL_RBN_K: &'static str = "2";
+const INITIAL_WINDOW_WIDTH: f32 = 1000.0;
+const INITIAL_WINDOW_HEIGHT: f32 = 800.0;
+const INITIAL_WINDOW_SIZE: Size = Size::new(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT);
+
+const RED: Color = Color {
+    r: 1.0,
+    g: 0.0,
+    b: 0.0,
+    a: 1.0,
+};
 
 #[derive(Debug, Clone)]
 enum Message {
     Advance,
     NewRBN,
-    RBNSizeChanged(String),
+    RBNParamNChanged(String),
+    RBNParamKChanged(String),
 }
 
 struct Controller {
     rbn: rbn::SynchronousRBN,
     matrix_data: Vec<Vec<u8>>,
-    input_rbn_size: String,
+    text_input_rbn_param_n: String,
+    text_input_rbn_param_k: String,
+    window_size: Size,
+    warning_text: String,
 }
 
 impl Default for Controller {
     fn default() -> Self {
         Self {
-            input_rbn_size: INITIAL_RBN_SIZE.to_string(),
-            matrix_data: Vec::default(),
             rbn: rbn::SynchronousRBN::default(),
+            matrix_data: Vec::default(),
+            text_input_rbn_param_n: INITIAL_RBN_N.to_string(),
+            text_input_rbn_param_k: INITIAL_RBN_K.to_string(),
+            window_size: INITIAL_WINDOW_SIZE,
+            warning_text: "".to_string(),
         }
     }
 }
@@ -34,46 +52,91 @@ fn theme(_: &Controller) -> Theme {
 
 impl Controller {
     fn view(&self) -> Row<'_, Message> {
-        let advance = button("Advance").on_press(Message::Advance);
-        let new_rbn = button("New RBN").on_press(Message::NewRBN);
-        let input_rbn_size: Element<Message> =
-            container(text_input("5", &self.input_rbn_size).on_input(Message::RBNSizeChanged))
-                .max_width(100)
-                .into();
-        let matrix_container = self.matrix(&self.matrix_data);
-        let right_bar = column![
-            column![
-                row![advance, new_rbn].spacing(10),
-                text("RBN Size:"),
-                input_rbn_size,
-            ]
-            .align_x(Alignment::End)
-            .spacing(10)
-        ]
-        .max_width(300)
-        .align_x(Alignment::Center);
-        let interface = row![scrollable(matrix_container), right_bar,];
+        let rbn_view_width = self.window_size.width * (2.0 / 3.0);
+        let right_pane_width = self.window_size.width * (1.0 / 3.0);
+        // println!("Window Size: {}", self.window_size.width);
+        // println!("Matrix width: {}", rbn_view_width);
+        // println!("Right Pane width: {}", right_pane_width);
+        let left_rbn_container =
+            container(scrollable(self.rbn_container(&self.matrix_data))).width(rbn_view_width);
+        let right_config_container = self.config_container().width(right_pane_width);
+        let interface = row![left_rbn_container, right_config_container,];
         interface
     }
     fn update(&mut self, message: Message) {
+        self.clear_warning();
         match message {
             Message::Advance => {
-                self.matrix_data.push(self.rbn.advance(1));
-            }
-            Message::NewRBN => match self.input_rbn_size.parse() {
-                Ok(parsed_value) => {
-                    self.rbn = rbn::SynchronousRBN::new(parsed_value, 2, 0.5);
-                    self.matrix_data = vec![self.rbn.advance(1)];
+                for _ in 0..20 {
+                    self.matrix_data.push(self.rbn.advance(1));
                 }
-                Err(_) => panic!("Could not parse input rbn size"),
-            },
-            Message::RBNSizeChanged(new_value) => {
-                self.input_rbn_size = new_value;
+            }
+            Message::NewRBN => {
+                let parsed_n: usize = match self.text_input_rbn_param_n.parse() {
+                    Ok(num) => num,
+                    Err(e) => {
+                        self.warning_text = format!(
+                            "Could not parse {} into integer {}",
+                            self.text_input_rbn_param_n, e
+                        );
+                        return;
+                    }
+                };
+                let parsed_k: usize = match self.text_input_rbn_param_k.parse() {
+                    Ok(num) => num,
+                    Err(e) => {
+                        self.warning_text = format!(
+                            "Could not parse {} into integer {}",
+                            self.text_input_rbn_param_k, e
+                        );
+                        return;
+                    }
+                };
+                self.rbn = rbn::SynchronousRBN::new(parsed_n, parsed_k, 0.8);
+                self.rbn.rand_activate_nodes(0.1);
+                self.matrix_data = vec![self.rbn.advance(1)];
+            }
+            Message::RBNParamNChanged(new_value) => {
+                self.text_input_rbn_param_n = new_value;
+            }
+            Message::RBNParamKChanged(new_value) => {
+                self.text_input_rbn_param_k = new_value;
             }
         }
     }
 
-    fn matrix(&self, data: &Vec<Vec<u8>>) -> Element<'_, Message> {
+    fn clear_warning(&mut self) {
+        self.warning_text = "".to_string();
+    }
+
+    fn config_container(&self) -> Container<'_, Message> {
+        let advance = button("Advance").on_press(Message::Advance);
+        let new_rbn = button("New RBN").on_press(Message::NewRBN);
+        let text_input_rbn_param_n: Element<Message> = container(
+            text_input("5", &self.text_input_rbn_param_n).on_input(Message::RBNParamNChanged),
+        )
+        .max_width(100)
+        .into();
+        let text_input_rbn_param_k: Element<Message> = container(
+            text_input("2", &self.text_input_rbn_param_k).on_input(Message::RBNParamKChanged),
+        )
+        .max_width(100)
+        .into();
+        container(
+            column![
+                row![advance, new_rbn].spacing(10),
+                text("RBN Param N:"),
+                text_input_rbn_param_n,
+                text("RBN Param K"),
+                text_input_rbn_param_k,
+                text(&self.warning_text).color(RED)
+            ]
+            .align_x(Alignment::Center)
+            .spacing(10),
+        )
+    }
+
+    fn rbn_container(&self, data: &Vec<Vec<u8>>) -> Element<'_, Message> {
         let mut column_view = column![].spacing(2).align_x(Alignment::Start);
 
         for row_data in data {
@@ -107,7 +170,8 @@ impl Controller {
 }
 
 fn main() -> iced::Result {
-    iced::application("A cool counter", Controller::update, Controller::view)
+    iced::application("Iron Chaos", Controller::update, Controller::view)
         .theme(theme)
+        .window_size(INITIAL_WINDOW_SIZE)
         .run()
 }
